@@ -123,6 +123,32 @@ export class GeminiAIService implements AIService {
     });
   }
 
+  async askAssistant(question: string, language: string): Promise<string> {
+    this.checkConfig();
+    const url = `${this.functionsUrl}/api/assistant/ask`;
+
+    return this.executeWithRetry(async () => {
+      const startTime = performance.now();
+      const res = await this.fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, language }),
+      });
+      this.aiLatency = performance.now() - startTime;
+
+      if (!res.ok) {
+        throw new Error(`Assistant API returned error status ${res.status}`);
+      }
+
+      const body = await res.json();
+      if (body.error) {
+        throw new Error(body.error);
+      }
+
+      return String(body.data.reply);
+    });
+  }
+
   async getAILatency(): Promise<number> {
     return Math.round(this.aiLatency);
   }

@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useDatabase } from '../context/ServiceContext';
+import { useDatabase, useAI } from '../context/ServiceContext';
 import type { Incident } from '../models/incident';
-import { AlertCircle, Clock, MapPin, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Clock, MapPin, ArrowLeft, Cpu } from 'lucide-react';
 
 export const IncidentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const db = useDatabase();
+  const ai = useAI();
+  
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  const [summary, setSummary] = useState<string>('Generating AI incident digest...');
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   useEffect(() => {
     const unsub = db.listenToIncidents(
@@ -19,6 +24,16 @@ export const IncidentDetail: React.FC = () => {
   }, [db]);
 
   const incident = incidents.find((i) => i.id === id);
+
+  useEffect(() => {
+    if (incident) {
+      setLoadingSummary(true);
+      ai.summarizeIncident(incident.id)
+        .then((res) => setSummary(res))
+        .catch(() => setSummary('Failed to connect to Gemini AI summary layer.'))
+        .finally(() => setLoadingSummary(false));
+    }
+  }, [incident, ai]);
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto">
@@ -40,7 +55,7 @@ export const IncidentDetail: React.FC = () => {
       )}
 
       {incident ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg flex flex-col gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg flex flex-col gap-4 overflow-hidden">
           <div className="flex justify-between items-center border-b border-slate-850 pb-3">
             <span className="text-[10px] uppercase font-bold text-slate-500">Incident Reference: <strong className="text-slate-300">{incident.id}</strong></span>
             <span className={`px-2.5 py-1 text-[9px] font-bold uppercase rounded-full ${
@@ -79,6 +94,21 @@ export const IncidentDetail: React.FC = () => {
           <div className="flex flex-col gap-2 border-t border-slate-850 pt-4">
             <span className="text-[10px] uppercase font-bold text-slate-500">Status</span>
             <span className="text-xs text-emerald-400 font-semibold capitalize">{incident.status}</span>
+          </div>
+
+          {/* AI-Reasoned Summary Segment (PromptWars: Problem Statement Alignment) */}
+          <div className="flex flex-col gap-2 border-t border-slate-800 pt-5 bg-slate-950/40 -mx-6 -mb-6 p-6">
+            <span className="text-[10px] uppercase font-bold text-sky-400 flex items-center gap-1">
+              <Cpu className="w-3.5 h-3.5 animate-pulse" />
+              Gemini AI Operational Digest
+            </span>
+            {loadingSummary ? (
+              <span className="text-xs text-slate-500 animate-pulse font-mono">Running reasoning engine...</span>
+            ) : (
+              <p className="text-xs text-slate-300 leading-relaxed font-medium bg-slate-950 border border-slate-850 p-3 rounded-lg">
+                {summary}
+              </p>
+            )}
           </div>
         </div>
       ) : (

@@ -29,6 +29,7 @@ export interface AIService {
   ingestSignal(zoneId: string, type: string, payload: Record<string, any>): Promise<OperationalEvent>;
   summarizeIncident(incidentId: string): Promise<string>;
   getSustainabilityAdvice(metrics: SustainabilityMetrics): Promise<string>;
+  askAssistant(question: string, language: string): Promise<string>;
   
   // Developer diagnostics checks
   getAILatency(): Promise<number>;

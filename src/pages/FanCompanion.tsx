@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDatabase, useAuth } from '../context/ServiceContext';
+import { useDatabase, useAuth, useAI } from '../context/ServiceContext';
 import type { Zone } from '../models/zone';
 import type { OperationalEvent } from '../models/event';
 import { Clock, Bell, Globe, Send, User } from 'lucide-react';
@@ -43,6 +43,7 @@ const TRANSLATIONS = {
 export const FanCompanion: React.FC = () => {
   const db = useDatabase();
   const auth = useAuth();
+  const ai = useAI();
   const user = auth.getCurrentUser();
   const lang = user?.language || 'en';
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
@@ -51,6 +52,7 @@ export const FanCompanion: React.FC = () => {
   const [events, setEvents] = useState<OperationalEvent[]>([]);
   const [messages, setMessages] = useState<{ sender: 'user' | 'ai'; text: string }[]>([]);
   const [inputText, setInputText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   
   // Rate-limiting notification check
   const [nudgeActive, setNudgeActive] = useState(false);
@@ -81,24 +83,24 @@ export const FanCompanion: React.FC = () => {
     }
   }, [events, lastNudgeTime]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || submitting) return;
 
     const userMsg = inputText.trim();
     setMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
     setInputText('');
+    setSubmitting(true);
 
-    // Simulated responsive AI support
-    setTimeout(() => {
-      let reply = t.responseGeneral;
-      if (userMsg.toLowerCase().includes('food') || userMsg.toLowerCase().includes('comida') || userMsg.toLowerCase().includes('nourriture')) {
-        reply = t.responseFood;
-      } else if (userMsg.toLowerCase().includes('exit') || userMsg.toLowerCase().includes('salida') || userMsg.toLowerCase().includes('sortie')) {
-        reply = t.responseExit;
-      }
+    try {
+      const reply = await ai.askAssistant(userMsg, lang);
       setMessages(prev => [...prev, { sender: 'ai', text: reply }]);
-    }, 800);
+    } catch (err) {
+      console.error('Failed to query assistant:', err);
+      setMessages(prev => [...prev, { sender: 'ai', text: 'Assistant service is temporarily offline.' }]);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getGateQueueTime = (zoneId: string): string => {

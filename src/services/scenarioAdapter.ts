@@ -207,6 +207,26 @@ export class ScenarioAdapter implements DatabaseService, AIService {
     return 'Sustainability operations are running optimally within standard tournament baselines.';
   }
 
+  async askAssistant(question: string, language: string): Promise<string> {
+    const lower = question.toLowerCase();
+    const isEs = language === 'es';
+    const isFr = language === 'fr';
+
+    if (lower.includes('food') || lower.includes('comida') || lower.includes('nourriture')) {
+      return isEs ? 'Los puestos de comida del norte no tienen tiempo de espera. Los del sur tienen 20 minutos.' : 
+             isFr ? 'Les stands de nourriture Nord ont zéro temps d\'attente. Les stands Sud sont à 20 minutes.' :
+             'North food stands currently have zero wait times. South food stands are at 20 minutes.';
+    }
+    if (lower.includes('exit') || lower.includes('salida') || lower.includes('sortie') || lower.includes('metro')) {
+      return isEs ? 'Siga la ruta de salida C (marcada en verde) hacia la estación de metro para evitar multitudes.' :
+             isFr ? 'Veuillez suivre la route de sortie C (marquée en vert) vers la station de métro pour éviter les foules.' :
+             'Please follow Exit Route C (marked green) to the metro station to avoid crowds.';
+    }
+    return isEs ? 'Puedo ayudarle con tiempos de cola, rutas accesibles y caminos de salida. Indíqueme qué necesita.' :
+           isFr ? 'Je peux vous aider avec les temps d\'attente, les itinéraires accessibles et les sorties. Dites-moi ce dont vous avez besoin.' :
+           'I can assist you with queue times, accessible routes, and exit paths. Please let me know what you need.';
+  }
+
   async getAILatency(): Promise<number> {
     return this.aiLatency;
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDatabase, useAI } from '../context/ServiceContext';
 import type { SustainabilityMetrics } from '../models/sustainability';
 import { Leaf, Award, Recycle, Zap, Droplet, Users, Cpu } from 'lucide-react';
@@ -19,32 +19,39 @@ export const SustainabilityIntelligence: React.FC = () => {
     return () => unsub();
   }, [db]);
 
+  // Debounce AI advice queries to prevent duplicate network spam (PromptWars: Efficiency)
   useEffect(() => {
-    if (metrics) {
+    if (!metrics) return;
+
+    const handler = setTimeout(() => {
       setLoadingAdvice(true);
       ai.getSustainabilityAdvice(metrics)
         .then((res) => setAdvice(res))
         .catch(() => setAdvice('Unable to connect to Gemini AI backend. Configure environment variables.'))
         .finally(() => setLoadingAdvice(false));
-    }
+    }, 1000);
+
+    return () => clearTimeout(handler);
   }, [metrics, ai]);
 
-  // Format Recharts data
-  const pieData = metrics ? [
-    { name: 'Public Transit', value: metrics.transitModeShare.transit, color: '#38bdf8' },
-    { name: 'Driving / Parking', value: metrics.transitModeShare.driving, color: '#94a3b8' },
-    { name: 'Walking', value: metrics.transitModeShare.walking, color: '#34d399' },
-  ] : [
-    { name: 'Public Transit', value: 60, color: '#38bdf8' },
-    { name: 'Driving / Parking', value: 30, color: '#94a3b8' },
-    { name: 'Walking', value: 10, color: '#34d399' },
-  ];
+  // Memoize Recharts configuration to prevent canvas redraw loops (PromptWars: Efficiency)
+  const pieData = useMemo(() => {
+    return metrics ? [
+      { name: 'Public Transit', value: metrics.transitModeShare.transit, color: '#38bdf8' },
+      { name: 'Driving / Parking', value: metrics.transitModeShare.driving, color: '#94a3b8' },
+      { name: 'Walking', value: metrics.transitModeShare.walking, color: '#34d399' },
+    ] : [
+      { name: 'Public Transit', value: 60, color: '#38bdf8' },
+      { name: 'Driving / Parking', value: 30, color: '#94a3b8' },
+      { name: 'Walking', value: 10, color: '#34d399' },
+    ];
+  }, [metrics]);
 
-  const historicalBarData = [
+  const historicalBarData = useMemo(() => [
     { name: 'Match 1', waste: 65, energy: 1.4 },
     { name: 'Match 2', waste: 70, energy: 1.3 },
     { name: 'Match 3', waste: 75, energy: 1.2 },
-  ];
+  ], []);
 
   return (
     <div className="flex flex-col gap-6">

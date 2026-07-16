@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import type { Zone } from '../models/zone';
 import { Users } from 'lucide-react';
 
@@ -9,20 +9,106 @@ interface DigitalTwinMapProps {
   blockedRoutes?: string[]; // list of zone IDs that security has blocked
 }
 
-export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
-  zones,
-  selectedZoneId,
-  onSelectZone,
-  blockedRoutes = [],
-}) => {
-  const [hoveredZoneId, setHoveredZoneId] = useState<string | null>(null);
+interface ZonePathMetadata {
+  id: string;
+  label: string;
+  textX: number;
+  textY: number;
+  type: 'path' | 'circle';
+  d?: string;
+  cx?: number;
+  cy?: number;
+  r?: number;
+  textClass?: string;
+}
 
-  // Helper to resolve CSS coloring for zones based on overlayColor or blocked state
-  const getZoneStyles = (zone: Zone) => {
-    const isBlocked = blockedRoutes.includes(zone.id);
-    const isSelected = selectedZoneId === zone.id;
-    const isHovered = hoveredZoneId === zone.id;
+const ZONE_METADATA: ZonePathMetadata[] = [
+  {
+    id: 'zone_metro',
+    label: 'METRO',
+    textX: 100,
+    textY: 240,
+    type: 'path',
+    d: 'M 50 250 A 60 60 0 0 1 150 250 L 120 320 A 40 40 0 0 0 80 320 Z',
+  },
+  {
+    id: 'zone_parking',
+    label: 'PARKING',
+    textX: 700,
+    textY: 240,
+    type: 'path',
+    d: 'M 650 250 A 60 60 0 0 0 750 250 L 720 320 A 40 40 0 0 1 680 320 Z',
+  },
+  {
+    id: 'zone_concourse',
+    label: 'CONCOURSE',
+    textX: 400,
+    textY: 140,
+    type: 'path',
+    d: 'M 400 110 A 190 190 0 1 1 399.9 110 M 400 150 A 150 150 0 1 0 400.1 150',
+    textClass: 'tracking-widest',
+  },
+  {
+    id: 'zone_seating',
+    label: 'SEATING BOWL',
+    textX: 400,
+    textY: 305,
+    type: 'circle',
+    cx: 400,
+    cy: 300,
+    r: 135,
+    textClass: 'text-xs font-semibold fill-slate-300 tracking-wider',
+  },
+  {
+    id: 'zone_gate_a',
+    label: 'GATE A',
+    textX: 260,
+    textY: 150,
+    type: 'path',
+    d: 'M 220 180 A 250 250 0 0 1 310 110 L 330 145 A 210 210 0 0 0 250 205 Z',
+    textClass: 'font-bold fill-slate-200',
+  },
+  {
+    id: 'zone_gate_b',
+    label: 'GATE B',
+    textX: 540,
+    textY: 150,
+    type: 'path',
+    d: 'M 490 110 A 250 250 0 0 1 580 180 L 550 205 A 210 210 0 0 0 470 145 Z',
+    textClass: 'font-bold fill-slate-200',
+  },
+  {
+    id: 'zone_gate_c',
+    label: 'GATE C',
+    textX: 540,
+    textY: 460,
+    type: 'path',
+    d: 'M 580 420 A 250 250 0 0 1 490 490 L 470 455 A 210 210 0 0 0 550 395 Z',
+    textClass: 'font-bold fill-slate-200',
+  },
+  {
+    id: 'zone_gate_d',
+    label: 'GATE D',
+    textX: 260,
+    textY: 460,
+    type: 'path',
+    d: 'M 310 490 A 250 250 0 0 1 220 420 L 250 395 A 210 210 0 0 0 330 455 Z',
+    textClass: 'font-bold fill-slate-200',
+  },
+];
 
+// Memoized individual zone path rendering item
+const MapZoneItem = React.memo<{
+  meta: ZonePathMetadata;
+  zone: Zone;
+  isBlocked: boolean;
+  isSelected: boolean;
+  isHovered: boolean;
+  onSelect: (id: string) => void;
+  onHover: (id: string | null) => void;
+}>(({ meta, zone, isBlocked, isSelected, isHovered, onSelect, onHover }) => {
+  
+  const pathClass = useMemo(() => {
     let baseColor = 'fill-emerald-500/20 stroke-emerald-400';
     let pulseClass = '';
 
@@ -39,22 +125,10 @@ export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
         ? 'stroke-slate-100 stroke-[2px]' 
         : 'stroke-[1.5px]';
 
-    return {
-      pathClass: `${baseColor} ${borderStyle} transition-all duration-300 cursor-pointer outline-none focus-visible:outline-sky-400 focus-visible:outline-offset-2 ${pulseClass}`,
-      isSelected
-    };
-  };
+    return `${baseColor} ${borderStyle} transition-all duration-300 cursor-pointer outline-none focus-visible:outline-sky-400 focus-visible:outline-offset-2 ${pulseClass}`;
+  }, [zone.overlayColor, isBlocked, isSelected, isHovered]);
 
-  // Keyboard navigation handler
-  const handleKeyDown = (e: React.KeyboardEvent, zoneId: string) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelectZone(zoneId);
-    }
-  };
-
-  const getZoneLabel = (zone: Zone) => {
-    const isBlocked = blockedRoutes.includes(zone.id);
+  const labelText = useMemo(() => {
     const statusText = isBlocked 
       ? 'Blocked' 
       : zone.overlayColor === 'crowd-critical' 
@@ -63,7 +137,78 @@ export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
           ? 'Moderate Congestion' 
           : 'Normal Density';
     return `${zone.name}: ${statusText}. Density ${zone.currentDensity}%. Flow rate ${zone.flowRate} fans per minute.`;
+  }, [zone.name, zone.currentDensity, zone.flowRate, zone.overlayColor, isBlocked]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect(zone.id);
+    }
   };
+
+  return (
+    <g>
+      {meta.type === 'circle' ? (
+        <circle
+          cx={meta.cx}
+          cy={meta.cy}
+          r={meta.r}
+          className={pathClass}
+          tabIndex={0}
+          onMouseEnter={() => onHover(zone.id)}
+          onMouseLeave={() => onHover(null)}
+          onClick={() => onSelect(zone.id)}
+          onKeyDown={handleKeyDown}
+          aria-label={labelText}
+          role="button"
+        />
+      ) : (
+        <path
+          d={meta.d}
+          className={pathClass}
+          tabIndex={0}
+          onMouseEnter={() => onHover(zone.id)}
+          onMouseLeave={() => onHover(null)}
+          onClick={() => onSelect(zone.id)}
+          onKeyDown={handleKeyDown}
+          aria-label={labelText}
+          role="button"
+        />
+      )}
+      <text
+        x={meta.textX}
+        y={meta.textY}
+        textAnchor="middle"
+        className={meta.textClass || "text-[10px] fill-slate-400 font-medium"}
+      >
+        {meta.label}
+      </text>
+    </g>
+  );
+});
+
+MapZoneItem.displayName = 'MapZoneItem';
+
+export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
+  zones,
+  selectedZoneId,
+  onSelectZone,
+  blockedRoutes = [],
+}) => {
+  const [hoveredZoneId, setHoveredZoneId] = useState<string | null>(null);
+
+  // Fast indexing lookup map (O(N) vs O(N^2))
+  const zoneLookup = useMemo(() => {
+    return new Map<string, Zone>(zones.map((z) => [z.id, z]));
+  }, [zones]);
+
+  const handleSelect = useCallback((id: string) => {
+    onSelectZone(id);
+  }, [onSelectZone]);
+
+  const handleHover = useCallback((id: string | null) => {
+    setHoveredZoneId(id);
+  }, []);
 
   return (
     <div className="w-full relative bg-slate-950/80 border border-slate-800 rounded-xl p-4 shadow-xl backdrop-blur-md">
@@ -100,193 +245,24 @@ export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
           <line x1="400" y1="20" x2="400" y2="580" className="stroke-slate-900 stroke-[0.5]" />
           <line x1="120" y1="300" x2="680" y2="300" className="stroke-slate-900 stroke-[0.5]" />
 
-          {/* Outer Transit Hubs & Parking Overlay zones */}
-          {/* Zone 7: Transit Metro Station */}
-          {(() => {
-            const z = zones.find(x => x.id === 'zone_metro');
-            if (!z) return null;
-            const { pathClass } = getZoneStyles(z);
-            return (
-              <g>
-                <path
-                  d="M 50 250 A 60 60 0 0 1 150 250 L 120 320 A 40 40 0 0 0 80 320 Z"
-                  className={pathClass}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredZoneId(z.id)}
-                  onMouseLeave={() => setHoveredZoneId(null)}
-                  onClick={() => onSelectZone(z.id)}
-                  onKeyDown={(e) => handleKeyDown(e, z.id)}
-                  aria-label={getZoneLabel(z)}
-                  role="button"
-                />
-                <text x="100" y="240" textAnchor="middle" className="text-[10px] fill-slate-400 font-medium">METRO</text>
-              </g>
-            );
-          })()}
+          {/* Dynamic Map Zone Items */}
+          {ZONE_METADATA.map((meta) => {
+            const zone = zoneLookup.get(meta.id);
+            if (!zone) return null;
 
-          {/* Zone 6: Parking Lot 1 */}
-          {(() => {
-            const z = zones.find(x => x.id === 'zone_parking');
-            if (!z) return null;
-            const { pathClass } = getZoneStyles(z);
             return (
-              <g>
-                <path
-                  d="M 650 250 A 60 60 0 0 0 750 250 L 720 320 A 40 40 0 0 1 680 320 Z"
-                  className={pathClass}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredZoneId(z.id)}
-                  onMouseLeave={() => setHoveredZoneId(null)}
-                  onClick={() => onSelectZone(z.id)}
-                  onKeyDown={(e) => handleKeyDown(e, z.id)}
-                  aria-label={getZoneLabel(z)}
-                  role="button"
-                />
-                <text x="700" y="240" textAnchor="middle" className="text-[10px] fill-slate-400 font-medium">PARKING</text>
-              </g>
+              <MapZoneItem
+                key={meta.id}
+                meta={meta}
+                zone={zone}
+                isBlocked={blockedRoutes.includes(meta.id)}
+                isSelected={selectedZoneId === meta.id}
+                isHovered={hoveredZoneId === meta.id}
+                onSelect={handleSelect}
+                onHover={handleHover}
+              />
             );
-          })()}
-
-          {/* Stadium Inner Structure: Concourse Ring */}
-          {(() => {
-            const z = zones.find(x => x.id === 'zone_concourse');
-            if (!z) return null;
-            const { pathClass } = getZoneStyles(z);
-            return (
-              <g>
-                <path
-                  d="M 400 110 A 190 190 0 1 1 399.9 110 M 400 150 A 150 150 0 1 0 400.1 150"
-                  className={`${pathClass} fill-rule-evenodd`}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredZoneId(z.id)}
-                  onMouseLeave={() => setHoveredZoneId(null)}
-                  onClick={() => onSelectZone(z.id)}
-                  onKeyDown={(e) => handleKeyDown(e, z.id)}
-                  aria-label={getZoneLabel(z)}
-                  role="button"
-                />
-                <text x="400" y="140" textAnchor="middle" className="text-[10px] fill-slate-400 font-medium tracking-widest">CONCOURSE</text>
-              </g>
-            );
-          })()}
-
-          {/* Seating Bowl Central Area */}
-          {(() => {
-            const z = zones.find(x => x.id === 'zone_seating');
-            if (!z) return null;
-            const { pathClass } = getZoneStyles(z);
-            return (
-              <g>
-                <circle
-                  cx="400"
-                  cy="300"
-                  r="135"
-                  className={pathClass}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredZoneId(z.id)}
-                  onMouseLeave={() => setHoveredZoneId(null)}
-                  onClick={() => onSelectZone(z.id)}
-                  onKeyDown={(e) => handleKeyDown(e, z.id)}
-                  aria-label={getZoneLabel(z)}
-                  role="button"
-                />
-                <text x="400" y="305" textAnchor="middle" className="text-xs font-semibold fill-slate-300 tracking-wider">SEATING BOWL</text>
-              </g>
-            );
-          })()}
-
-          {/* Entry Gates overlays */}
-          {/* Gate A (Top Left) */}
-          {(() => {
-            const z = zones.find(x => x.id === 'zone_gate_a');
-            if (!z) return null;
-            const { pathClass } = getZoneStyles(z);
-            return (
-              <g>
-                <path
-                  d="M 220 180 A 250 250 0 0 1 310 110 L 330 145 A 210 210 0 0 0 250 205 Z"
-                  className={pathClass}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredZoneId(z.id)}
-                  onMouseLeave={() => setHoveredZoneId(null)}
-                  onClick={() => onSelectZone(z.id)}
-                  onKeyDown={(e) => handleKeyDown(e, z.id)}
-                  aria-label={getZoneLabel(z)}
-                  role="button"
-                />
-                <text x="260" y="150" textAnchor="middle" className="text-[10px] font-bold fill-slate-200">GATE A</text>
-              </g>
-            );
-          })()}
-
-          {/* Gate B (Top Right) */}
-          {(() => {
-            const z = zones.find(x => x.id === 'zone_gate_b');
-            if (!z) return null;
-            const { pathClass } = getZoneStyles(z);
-            return (
-              <g>
-                <path
-                  d="M 490 110 A 250 250 0 0 1 580 180 L 550 205 A 210 210 0 0 0 470 145 Z"
-                  className={pathClass}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredZoneId(z.id)}
-                  onMouseLeave={() => setHoveredZoneId(null)}
-                  onClick={() => onSelectZone(z.id)}
-                  onKeyDown={(e) => handleKeyDown(e, z.id)}
-                  aria-label={getZoneLabel(z)}
-                  role="button"
-                />
-                <text x="540" y="150" textAnchor="middle" className="text-[10px] font-bold fill-slate-200">GATE B</text>
-              </g>
-            );
-          })()}
-
-          {/* Gate C (Bottom Right) */}
-          {(() => {
-            const z = zones.find(x => x.id === 'zone_gate_c');
-            if (!z) return null;
-            const { pathClass } = getZoneStyles(z);
-            return (
-              <g>
-                <path
-                  d="M 580 420 A 250 250 0 0 1 490 490 L 470 455 A 210 210 0 0 0 550 395 Z"
-                  className={pathClass}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredZoneId(z.id)}
-                  onMouseLeave={() => setHoveredZoneId(null)}
-                  onClick={() => onSelectZone(z.id)}
-                  onKeyDown={(e) => handleKeyDown(e, z.id)}
-                  aria-label={getZoneLabel(z)}
-                  role="button"
-                />
-                <text x="540" y="460" textAnchor="middle" className="text-[10px] font-bold fill-slate-200">GATE C</text>
-              </g>
-            );
-          })()}
-
-          {/* Gate D (Bottom Left) */}
-          {(() => {
-            const z = zones.find(x => x.id === 'zone_gate_d');
-            if (!z) return null;
-            const { pathClass } = getZoneStyles(z);
-            return (
-              <g>
-                <path
-                  d="M 310 490 A 250 250 0 0 1 220 420 L 250 395 A 210 210 0 0 0 330 455 Z"
-                  className={pathClass}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredZoneId(z.id)}
-                  onMouseLeave={() => setHoveredZoneId(null)}
-                  onClick={() => onSelectZone(z.id)}
-                  onKeyDown={(e) => handleKeyDown(e, z.id)}
-                  aria-label={getZoneLabel(z)}
-                  role="button"
-                />
-                <text x="260" y="460" textAnchor="middle" className="text-[10px] font-bold fill-slate-200">GATE D</text>
-              </g>
-            );
-          })()}
+          })}
 
           {/* Central Pitch Circle (Pure Visual) */}
           <ellipse cx="400" cy="300" rx="35" ry="25" className="fill-slate-900/50 stroke-slate-800 stroke-[1]" />
