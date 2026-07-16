@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDatabase, useAI } from '../context/ServiceContext';
 import type { Zone } from '../models/zone';
 import type { OperationalEvent } from '../models/event';
@@ -40,7 +40,7 @@ export const OrganizerDashboard: React.FC = () => {
     }
   };
 
-  const activeEvent = events.find((e) => e.zoneId === selectedZoneId);
+  const activeEvent = useMemo(() => events.find((e) => e.zoneId === selectedZoneId), [events, selectedZoneId]);
 
   return (
     <div className="flex flex-col gap-6">

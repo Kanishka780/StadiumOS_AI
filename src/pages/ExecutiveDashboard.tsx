@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDatabase } from '../context/ServiceContext';
 import type { AuditLog } from '../models/audit';
 import type { SustainabilityMetrics } from '../models/sustainability';
@@ -20,9 +20,13 @@ export const ExecutiveDashboard: React.FC = () => {
     };
   }, [db]);
 
-  const acceptCount = auditLogs.filter(l => l.decision === 'accept').length;
-  const overrideCount = auditLogs.filter(l => l.decision === 'override').length;
-  const snoozeCount = auditLogs.filter(l => l.decision === 'snooze').length;
+  const { acceptCount, overrideCount, snoozeCount } = useMemo(() => {
+    return {
+      acceptCount: auditLogs.filter(l => l.decision === 'accept').length,
+      overrideCount: auditLogs.filter(l => l.decision === 'override').length,
+      snoozeCount: auditLogs.filter(l => l.decision === 'snooze').length,
+    };
+  }, [auditLogs]);
 
   return (
     <div className="flex flex-col gap-6">

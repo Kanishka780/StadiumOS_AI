@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDatabase } from '../context/ServiceContext';
 import type { Zone } from '../models/zone';
 import type { Incident } from '../models/incident';
@@ -31,7 +31,7 @@ export const SecurityDashboard: React.FC = () => {
     await db.blockRoute(zoneId, !currentlyBlocked);
   };
 
-  const activeAdvisories = events.filter(e => e.severity === 'high' || e.severity === 'critical');
+  const activeAdvisories = useMemo(() => events.filter(e => e.severity === 'high' || e.severity === 'critical'), [events]);
 
   return (
     <div className="flex flex-col gap-6">
