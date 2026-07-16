@@ -32,7 +32,7 @@ const localNotifications: NotificationService = {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, { body });
     } else {
-      console.log(`[Local Notification] ${title}: ${body}`);
+      console.info(`[Local Notification] ${title}: ${body}`);
     }
   },
   async requestPermissions() {
