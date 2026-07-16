@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  base: '/StadiumOS_AI/',
+  base: process.env.GITHUB_ACTIONS ? '/StadiumOS_AI/' : '/',
   plugins: [react(), tailwindcss()],
   test: {
     environment: 'jsdom',
