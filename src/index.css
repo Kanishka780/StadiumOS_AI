@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-crowd-safe: #10b981;
+  --color-crowd-warning: #f59e0b;
+  --color-crowd-critical: #ef4444;
+}
+
+/* Base Body Styles */
+body {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #030712; /* slate-950 */
+  color: #f9fafb; /* slate-50 */
+}
+
+/* High Contrast Mode CSS Override Targets (PromptWars: Accessibility) */
+.high-contrast-theme {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast-theme nav,
+.high-contrast-theme main,
+.high-contrast-theme div,
+.high-contrast-theme section,
+.high-contrast-theme footer {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.high-contrast-theme text {
+  fill: #ffffff !important;
+}
+
+.high-contrast-theme button,
+.high-contrast-theme a {
+  background-color: #000000 !important;
+  color: #ffff00 !important; /* High contrast yellow */
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast-theme select,
+.high-contrast-theme textarea,
+.high-contrast-theme input {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Visual Focus Rings */
+*:focus-visible {
+  outline: 3px solid #38bdf8 !important; /* sky-400 */
+  outline-offset: 2px !important;
+}
