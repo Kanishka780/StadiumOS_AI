@@ -22,6 +22,7 @@ const ExecutiveDashboard = React.lazy(() => import('./pages/ExecutiveDashboard')
 const SustainabilityIntelligence = React.lazy(() => import('./pages/SustainabilityIntelligence').then(m => ({ default: m.SustainabilityIntelligence })));
 const TrustCenter = React.lazy(() => import('./pages/TrustCenter').then(m => ({ default: m.TrustCenter })));
 const IncidentDetail = React.lazy(() => import('./pages/IncidentDetail').then(m => ({ default: m.IncidentDetail })));
+const JudgeMode = React.lazy(() => import('./pages/JudgeMode').then(m => ({ default: m.JudgeMode })));
 
 // Instantiate Core Services
 const useSimulation = import.meta.env.VITE_USE_SIMULATION !== 'false';
@@ -79,7 +80,9 @@ function App() {
             <MainLayout>
               <Routes>
                 <Route path="/login" element={<RoleLogin />} />
-                <Route path="/" element={<DigitalTwin />} />
+                <Route path="/" element={<JudgeMode />} />
+                <Route path="/judge" element={<JudgeMode />} />
+                <Route path="/twin" element={<DigitalTwin />} />
                 <Route path="/fan" element={<FanCompanion />} />
                 <Route path="/organizer" element={<OrganizerDashboard />} />
                 <Route path="/volunteer" element={<VolunteerCopilot />} />

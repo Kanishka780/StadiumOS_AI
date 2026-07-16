@@ -28,19 +28,22 @@ export const RoleNavbar: React.FC = () => {
           <span className="font-bold text-slate-100 text-lg tracking-wider">StadiumOS AI</span>
         </Link>
 
-        {user && (
-          <div className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-400">
-            <Link to="/" className="hover:text-slate-100 transition-colors">Digital Twin</Link>
-            {user.role === 'organizer' && <Link to="/organizer" className="hover:text-slate-100 transition-colors">Ops Panel</Link>}
-            {user.role === 'security' && <Link to="/security" className="hover:text-slate-100 transition-colors">Security Panel</Link>}
-            {user.role === 'volunteer' && <Link to="/volunteer" className="hover:text-slate-100 transition-colors">Volunteer Copilot</Link>}
-            {user.role === 'accessibility' && <Link to="/accessibility" className="hover:text-slate-100 transition-colors">Accessibility Desk</Link>}
-            {user.role === 'fan' && <Link to="/fan" className="hover:text-slate-100 transition-colors">Fan Companion</Link>}
-            {user.role === 'executive' && <Link to="/executive" className="hover:text-slate-100 transition-colors">Executive Stats</Link>}
-            <Link to="/sustainability" className="hover:text-slate-100 transition-colors">Sustainability</Link>
-            <Link to="/trust" className="hover:text-slate-100 transition-colors">Trust Center</Link>
-          </div>
-        )}
+        <div className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-400">
+          <Link to="/judge" className="text-amber-400 hover:text-amber-300 font-bold transition-colors">Judge Mode ⚖️</Link>
+          <Link to="/twin" className="hover:text-slate-100 transition-colors">Digital Twin Map</Link>
+          {user && (
+            <>
+              {user.role === 'organizer' && <Link to="/organizer" className="hover:text-slate-100 transition-colors">Ops Panel</Link>}
+              {user.role === 'security' && <Link to="/security" className="hover:text-slate-100 transition-colors">Security Panel</Link>}
+              {user.role === 'volunteer' && <Link to="/volunteer" className="hover:text-slate-100 transition-colors">Volunteer Copilot</Link>}
+              {user.role === 'accessibility' && <Link to="/accessibility" className="hover:text-slate-100 transition-colors">Accessibility Desk</Link>}
+              {user.role === 'fan' && <Link to="/fan" className="hover:text-slate-100 transition-colors">Fan Companion</Link>}
+              {user.role === 'executive' && <Link to="/executive" className="hover:text-slate-100 transition-colors">Executive Stats</Link>}
+            </>
+          )}
+          <Link to="/sustainability" className="hover:text-slate-100 transition-colors">Sustainability</Link>
+          <Link to="/trust" className="hover:text-slate-100 transition-colors">Trust Center</Link>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
