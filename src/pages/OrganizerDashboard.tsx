@@ -4,6 +4,7 @@ import type { Zone } from '../models/zone';
 import type { OperationalEvent } from '../models/event';
 import { Play, Activity, Users, Cpu, CheckCircle } from 'lucide-react';
 import { AIRecommendationCard } from '../components/AIRecommendationCard';
+import { OperationsTimeline } from '../components/OperationsTimeline';
 
 export const OrganizerDashboard: React.FC = () => {
   const db = useDatabase();
@@ -15,8 +16,14 @@ export const OrganizerDashboard: React.FC = () => {
   const [ingesting, setIngesting] = useState(false);
 
   useEffect(() => {
-    const unsubZones = db.listenToZones((data) => setZones(data), () => {});
-    const unsubEvents = db.listenToEvents((data) => setEvents(data), () => {});
+    const unsubZones = db.listenToZones(
+      (data) => setZones(data),
+      () => {},
+    );
+    const unsubEvents = db.listenToEvents(
+      (data) => setEvents(data),
+      () => {},
+    );
 
     return () => {
       unsubZones();
@@ -31,7 +38,7 @@ export const OrganizerDashboard: React.FC = () => {
       await ai.ingestSignal(selectedZoneId, 'turnstile_density', {
         count: 140,
         severity: 'high',
-        description: 'Sensor threshold exceeded at entrance lanes.'
+        description: 'Sensor threshold exceeded at entrance lanes.',
       });
     } catch (err) {
       console.error('Failed to ingest signal:', err);
@@ -40,7 +47,10 @@ export const OrganizerDashboard: React.FC = () => {
     }
   };
 
-  const activeEvent = useMemo(() => events.find((e) => e.zoneId === selectedZoneId), [events, selectedZoneId]);
+  const activeEvent = useMemo(
+    () => events.find((e) => e.zoneId === selectedZoneId),
+    [events, selectedZoneId],
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,14 +60,15 @@ export const OrganizerDashboard: React.FC = () => {
           <Activity className="w-6 h-6 text-sky-400" />
           Operations Command Console
         </h1>
-        <p className="text-slate-400 text-sm mt-1">Review live crowd telemetry, trigger Gemini reasoning passes, and orchestrate volunteer actions.</p>
+        <p className="text-slate-400 text-sm mt-1">
+          Review live crowd telemetry, trigger Gemini reasoning passes, and orchestrate volunteer
+          actions.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Left Column: Telemetry & Ingestion */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          
           {/* Live Zone Telemetry List */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-3">
@@ -74,16 +85,22 @@ export const OrganizerDashboard: React.FC = () => {
                     key={zone.id}
                     onClick={() => setSelectedZoneId(zone.id)}
                     className={`p-3.5 rounded-lg border transition-all cursor-pointer text-left flex justify-between items-center ${
-                      isSelected 
-                        ? 'bg-sky-500/10 border-sky-500/50' 
+                      isSelected
+                        ? 'bg-sky-500/10 border-sky-500/50'
                         : 'bg-slate-950/50 border-slate-850 hover:border-slate-800'
                     }`}
                   >
                     <div>
-                      <span className="text-xs font-semibold text-slate-300 block">{zone.name}</span>
-                      <span className="text-[10px] text-slate-500">Flow: {zone.flowRate} fans/min</span>
+                      <span className="text-xs font-semibold text-slate-300 block">
+                        {zone.name}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        Flow: {zone.flowRate} fans/min
+                      </span>
                     </div>
-                    <span className={`text-xs font-bold ${isCritical ? 'text-rose-400 animate-pulse' : 'text-slate-200'}`}>
+                    <span
+                      className={`text-xs font-bold ${isCritical ? 'text-rose-400 animate-pulse' : 'text-slate-200'}`}
+                    >
                       {zone.currentDensity}% density
                     </span>
                   </div>
@@ -98,9 +115,10 @@ export const OrganizerDashboard: React.FC = () => {
               <Play className="w-4 h-4 text-sky-400" />
               Manual Telemetry Ingest Trigger
             </h3>
-            
+
             <p className="text-xs text-slate-400 leading-relaxed">
-              Inject a turnstile density spike telemetry to trigger an immediate server-side Gemini Pro evaluation cycle.
+              Inject a turnstile density spike telemetry to trigger an immediate server-side Gemini
+              Pro evaluation cycle.
             </p>
 
             <div className="flex items-center gap-4">
@@ -111,7 +129,9 @@ export const OrganizerDashboard: React.FC = () => {
                 aria-label="Select target zone"
               >
                 {zones.map((z) => (
-                  <option key={z.id} value={z.id}>{z.name}</option>
+                  <option key={z.id} value={z.id}>
+                    {z.name}
+                  </option>
                 ))}
               </select>
 
@@ -124,7 +144,6 @@ export const OrganizerDashboard: React.FC = () => {
               </button>
             </div>
           </div>
-
         </div>
 
         {/* Right Column: AI Advisors */}
@@ -140,12 +159,14 @@ export const OrganizerDashboard: React.FC = () => {
             ) : (
               <div className="text-center text-slate-500 text-xs py-8 flex flex-col items-center gap-2">
                 <CheckCircle className="w-8 h-8 text-emerald-500/60" />
-                <span>Zone status is normal. Select other gates or trigger congestion spikes to analyze.</span>
+                <span>
+                  Zone status is normal. Select other gates or trigger congestion spikes to analyze.
+                </span>
               </div>
             )}
           </div>
+          <OperationsTimeline />
         </div>
-
       </div>
     </div>
   );

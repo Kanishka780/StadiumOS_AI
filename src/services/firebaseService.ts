@@ -1,19 +1,23 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  onSnapshot, 
-  updateDoc, 
-  addDoc, 
+import {
+  getFirestore,
+  collection,
+  doc,
+  onSnapshot,
+  updateDoc,
+  addDoc,
   Firestore,
   query,
   where,
-  orderBy
+  orderBy,
 } from 'firebase/firestore';
 import type { DatabaseService } from './interfaces';
 import { ZoneSchema, type Zone } from '../models/zone';
-import { OperationalEventSchema, type OperationalEvent } from '../models/event';
+import {
+  OperationalEventSchema,
+  type OperationalEvent,
+  type EventTimelineEntry,
+} from '../models/event';
 import { VolunteerTaskSchema, type VolunteerTask } from '../models/task';
 import { IncidentSchema, type Incident } from '../models/incident';
 import { SustainabilityMetricsSchema, type SustainabilityMetrics } from '../models/sustainability';
@@ -58,133 +62,204 @@ export class FirebaseDbService implements DatabaseService {
     try {
       const dbRef = this.checkDb();
       const zonesCol = collection(dbRef, 'zones');
-      
+
       const startTime = performance.now();
-      return onSnapshot(zonesCol, (snapshot) => {
-        this.readLatency = performance.now() - startTime;
-        const list: Zone[] = [];
-        snapshot.forEach((docSnap) => {
-          const parsed = ZoneSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
-          if (parsed.success) {
-            list.push(parsed.data);
-          }
-        });
-        onUpdate(list);
-      }, onError);
+      return onSnapshot(
+        zonesCol,
+        (snapshot) => {
+          this.readLatency = performance.now() - startTime;
+          const list: Zone[] = [];
+          snapshot.forEach((docSnap) => {
+            const parsed = ZoneSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
+            if (parsed.success) {
+              list.push(parsed.data);
+            }
+          });
+          onUpdate(list);
+        },
+        onError,
+      );
     } catch (err) {
       onError(err as Error);
       return () => {};
     }
   }
 
-  listenToEvents(onUpdate: (events: OperationalEvent[]) => void, onError: (err: Error) => void): () => void {
+  listenToEvents(
+    onUpdate: (events: OperationalEvent[]) => void,
+    onError: (err: Error) => void,
+  ): () => void {
     try {
       const dbRef = this.checkDb();
       const q = query(collection(dbRef, 'events'), orderBy('createdAt', 'desc'));
-      
+
       const startTime = performance.now();
-      return onSnapshot(q, (snapshot) => {
-        this.readLatency = performance.now() - startTime;
-        const list: OperationalEvent[] = [];
-        snapshot.forEach((docSnap) => {
-          const parsed = OperationalEventSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
-          if (parsed.success) {
-            list.push(parsed.data);
-          }
-        });
-        onUpdate(list);
-      }, onError);
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          this.readLatency = performance.now() - startTime;
+          const list: OperationalEvent[] = [];
+          snapshot.forEach((docSnap) => {
+            const parsed = OperationalEventSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
+            if (parsed.success) {
+              list.push(parsed.data);
+            }
+          });
+          onUpdate(list);
+        },
+        onError,
+      );
     } catch (err) {
       onError(err as Error);
       return () => {};
     }
   }
 
-  listenToTasks(volunteerId: string, onUpdate: (tasks: VolunteerTask[]) => void, onError: (err: Error) => void): () => void {
+  listenToTasks(
+    volunteerId: string,
+    onUpdate: (tasks: VolunteerTask[]) => void,
+    onError: (err: Error) => void,
+  ): () => void {
     try {
       const dbRef = this.checkDb();
       const q = query(
-        collection(dbRef, 'tasks'), 
+        collection(dbRef, 'tasks'),
         where('assignedTo', '==', volunteerId),
-        orderBy('timestamp', 'desc')
+        orderBy('timestamp', 'desc'),
       );
-      
+
       const startTime = performance.now();
-      return onSnapshot(q, (snapshot) => {
-        this.readLatency = performance.now() - startTime;
-        const list: VolunteerTask[] = [];
-        snapshot.forEach((docSnap) => {
-          const parsed = VolunteerTaskSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
-          if (parsed.success) {
-            list.push(parsed.data);
-          }
-        });
-        onUpdate(list);
-      }, onError);
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          this.readLatency = performance.now() - startTime;
+          const list: VolunteerTask[] = [];
+          snapshot.forEach((docSnap) => {
+            const parsed = VolunteerTaskSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
+            if (parsed.success) {
+              list.push(parsed.data);
+            }
+          });
+          onUpdate(list);
+        },
+        onError,
+      );
     } catch (err) {
       onError(err as Error);
       return () => {};
     }
   }
 
-  listenToIncidents(onUpdate: (incidents: Incident[]) => void, onError: (err: Error) => void): () => void {
+  listenToIncidents(
+    onUpdate: (incidents: Incident[]) => void,
+    onError: (err: Error) => void,
+  ): () => void {
     try {
       const dbRef = this.checkDb();
       const q = query(collection(dbRef, 'incidents'), orderBy('timestamp', 'desc'));
-      
+
       const startTime = performance.now();
-      return onSnapshot(q, (snapshot) => {
-        this.readLatency = performance.now() - startTime;
-        const list: Incident[] = [];
-        snapshot.forEach((docSnap) => {
-          const parsed = IncidentSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
-          if (parsed.success) {
-            list.push(parsed.data);
-          }
-        });
-        onUpdate(list);
-      }, onError);
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          this.readLatency = performance.now() - startTime;
+          const list: Incident[] = [];
+          snapshot.forEach((docSnap) => {
+            const parsed = IncidentSchema.safeParse({ id: docSnap.id, ...docSnap.data() });
+            if (parsed.success) {
+              list.push(parsed.data);
+            }
+          });
+          onUpdate(list);
+        },
+        onError,
+      );
     } catch (err) {
       onError(err as Error);
       return () => {};
     }
   }
 
-  listenToSustainability(matchId: string, onUpdate: (metrics: SustainabilityMetrics) => void, onError: (err: Error) => void): () => void {
+  listenToSustainability(
+    matchId: string,
+    onUpdate: (metrics: SustainabilityMetrics) => void,
+    onError: (err: Error) => void,
+  ): () => void {
     try {
       const dbRef = this.checkDb();
       const docRef = doc(dbRef, 'sustainability', matchId);
-      
+
       const startTime = performance.now();
-      return onSnapshot(docRef, (docSnap) => {
-        this.readLatency = performance.now() - startTime;
-        if (docSnap.exists()) {
-          const parsed = SustainabilityMetricsSchema.safeParse({ matchId: docSnap.id, ...docSnap.data() });
-          if (parsed.success) {
-            onUpdate(parsed.data);
+      return onSnapshot(
+        docRef,
+        (docSnap) => {
+          this.readLatency = performance.now() - startTime;
+          if (docSnap.exists()) {
+            const parsed = SustainabilityMetricsSchema.safeParse({
+              matchId: docSnap.id,
+              ...docSnap.data(),
+            });
+            if (parsed.success) {
+              onUpdate(parsed.data);
+            }
           }
-        }
-      }, onError);
+        },
+        onError,
+      );
     } catch (err) {
       onError(err as Error);
       return () => {};
     }
   }
 
-  listenToAuditLogs(onUpdate: (logs: AuditLog[]) => void, onError: (err: Error) => void): () => void {
+  listenToAuditLogs(
+    onUpdate: (logs: AuditLog[]) => void,
+    onError: (err: Error) => void,
+  ): () => void {
     try {
       const dbRef = this.checkDb();
       const q = query(collection(dbRef, 'auditLog'), orderBy('timestamp', 'desc'));
-      
+
       const startTime = performance.now();
-      return onSnapshot(q, (snapshot) => {
-        this.readLatency = performance.now() - startTime;
-        const list: AuditLog[] = [];
-        snapshot.forEach((docSnap) => {
-          list.push({ id: docSnap.id, ...docSnap.data() } as AuditLog);
-        });
-        onUpdate(list);
-      }, onError);
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          this.readLatency = performance.now() - startTime;
+          const list: AuditLog[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...docSnap.data() } as AuditLog);
+          });
+          onUpdate(list);
+        },
+        onError,
+      );
+    } catch (err) {
+      onError(err as Error);
+      return () => {};
+    }
+  }
+
+  listenToTimeline(
+    onUpdate: (timeline: EventTimelineEntry[]) => void,
+    onError: (err: Error) => void,
+  ): () => void {
+    try {
+      const dbRef = this.checkDb();
+      const q = query(collection(dbRef, 'timeline'), orderBy('timestamp', 'desc'));
+
+      const startTime = performance.now();
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          this.readLatency = performance.now() - startTime;
+          const list: EventTimelineEntry[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...docSnap.data() } as EventTimelineEntry);
+          });
+          onUpdate(list);
+        },
+        onError,
+      );
     } catch (err) {
       onError(err as Error);
       return () => {};

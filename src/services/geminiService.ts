@@ -1,5 +1,9 @@
 import type { AIService } from './interfaces';
-import { OperationalEventSchema, type OperationalEvent } from '../models/event';
+import {
+  OperationalEventSchema,
+  type OperationalEvent,
+  type IngestSignalPayload,
+} from '../models/event';
 import type { SustainabilityMetrics } from '../models/sustainability';
 
 export class GeminiAIService implements AIService {
@@ -16,7 +20,11 @@ export class GeminiAIService implements AIService {
     }
   }
 
-  private async fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 8000): Promise<Response> {
+  private async fetchWithTimeout(
+    url: string,
+    options: RequestInit,
+    timeoutMs = 8000,
+  ): Promise<Response> {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -45,7 +53,11 @@ export class GeminiAIService implements AIService {
     }
   }
 
-  async ingestSignal(zoneId: string, type: string, payload: Record<string, any>): Promise<OperationalEvent> {
+  async ingestSignal(
+    zoneId: string,
+    type: string,
+    payload: IngestSignalPayload,
+  ): Promise<OperationalEvent> {
     this.checkConfig();
     const url = `${this.functionsUrl}/api/events/ingest`;
 

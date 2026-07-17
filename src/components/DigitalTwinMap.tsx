@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import type { Zone } from '../models/zone';
 import { Users } from 'lucide-react';
+import { useAuth } from '../context/ServiceContext';
+import { MAP_TRANSLATIONS } from '../services/i18n';
 
 interface DigitalTwinMapProps {
   zones: Zone[];
@@ -98,7 +100,7 @@ const ZONE_METADATA: ZonePathMetadata[] = [
 ];
 
 // Memoized individual zone path rendering item
-const MapZoneItem = React.memo<{
+const ZoneOverlay = React.memo<{
   meta: ZonePathMetadata;
   zone: Zone;
   isBlocked: boolean;
@@ -106,88 +108,98 @@ const MapZoneItem = React.memo<{
   isHovered: boolean;
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;
-}>(({ meta, zone, isBlocked, isSelected, isHovered, onSelect, onHover }) => {
-  
-  const pathClass = useMemo(() => {
-    let baseColor = 'fill-emerald-500/20 stroke-emerald-400';
-    let pulseClass = '';
+}>(
+  ({ meta, zone, isBlocked, isSelected, isHovered, onSelect, onHover }) => {
+    const pathClass = useMemo(() => {
+      let baseColor = 'fill-emerald-500/20 stroke-emerald-400';
+      let pulseClass = '';
 
-    if (isBlocked || zone.overlayColor === 'crowd-critical') {
-      baseColor = 'fill-rose-500/30 stroke-rose-500';
-      pulseClass = 'animate-pulse';
-    } else if (zone.overlayColor === 'crowd-warning') {
-      baseColor = 'fill-amber-500/25 stroke-amber-500';
-    }
+      if (isBlocked || zone.overlayColor === 'crowd-critical') {
+        baseColor = 'fill-rose-500/30 stroke-rose-500';
+        pulseClass = 'animate-pulse';
+      } else if (zone.overlayColor === 'crowd-warning') {
+        baseColor = 'fill-amber-500/25 stroke-amber-500';
+      }
 
-    const borderStyle = isSelected 
-      ? 'stroke-sky-400 stroke-[3px]' 
-      : isHovered 
-        ? 'stroke-slate-100 stroke-[2px]' 
-        : 'stroke-[1.5px]';
+      const borderStyle = isSelected
+        ? 'stroke-sky-400 stroke-[3px]'
+        : isHovered
+          ? 'stroke-slate-100 stroke-[2px]'
+          : 'stroke-[1.5px]';
 
-    return `${baseColor} ${borderStyle} transition-all duration-300 cursor-pointer outline-none focus-visible:outline-sky-400 focus-visible:outline-offset-2 ${pulseClass}`;
-  }, [zone.overlayColor, isBlocked, isSelected, isHovered]);
+      return `${baseColor} ${borderStyle} transition-all duration-300 cursor-pointer outline-none focus-visible:outline-sky-400 focus-visible:outline-offset-2 ${pulseClass}`;
+    }, [zone.overlayColor, isBlocked, isSelected, isHovered]);
 
-  const labelText = useMemo(() => {
-    const statusText = isBlocked 
-      ? 'Blocked' 
-      : zone.overlayColor === 'crowd-critical' 
-        ? 'Critical Congestion' 
-        : zone.overlayColor === 'crowd-warning' 
-          ? 'Moderate Congestion' 
-          : 'Normal Density';
-    return `${zone.name}: ${statusText}. Density ${zone.currentDensity}%. Flow rate ${zone.flowRate} fans per minute.`;
-  }, [zone.name, zone.currentDensity, zone.flowRate, zone.overlayColor, isBlocked]);
+    const labelText = useMemo(() => {
+      const statusText = isBlocked
+        ? 'Blocked'
+        : zone.overlayColor === 'crowd-critical'
+          ? 'Critical Congestion'
+          : zone.overlayColor === 'crowd-warning'
+            ? 'Moderate Congestion'
+            : 'Normal Density';
+      return `${zone.name}: ${statusText}. Density ${zone.currentDensity}%. Flow rate ${zone.flowRate} fans per minute.`;
+    }, [zone.name, zone.currentDensity, zone.flowRate, zone.overlayColor, isBlocked]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelect(zone.id);
-    }
-  };
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onSelect(zone.id);
+      }
+    };
 
-  return (
-    <g>
-      {meta.type === 'circle' ? (
-        <circle
-          cx={meta.cx}
-          cy={meta.cy}
-          r={meta.r}
-          className={pathClass}
-          tabIndex={0}
-          onMouseEnter={() => onHover(zone.id)}
-          onMouseLeave={() => onHover(null)}
-          onClick={() => onSelect(zone.id)}
-          onKeyDown={handleKeyDown}
-          aria-label={labelText}
-          role="button"
-        />
-      ) : (
-        <path
-          d={meta.d}
-          className={pathClass}
-          tabIndex={0}
-          onMouseEnter={() => onHover(zone.id)}
-          onMouseLeave={() => onHover(null)}
-          onClick={() => onSelect(zone.id)}
-          onKeyDown={handleKeyDown}
-          aria-label={labelText}
-          role="button"
-        />
-      )}
-      <text
-        x={meta.textX}
-        y={meta.textY}
-        textAnchor="middle"
-        className={meta.textClass || "text-[10px] fill-slate-400 font-medium"}
-      >
-        {meta.label}
-      </text>
-    </g>
-  );
-});
+    return (
+      <g>
+        {meta.type === 'circle' ? (
+          <circle
+            cx={meta.cx}
+            cy={meta.cy}
+            r={meta.r}
+            className={pathClass}
+            tabIndex={0}
+            onMouseEnter={() => onHover(zone.id)}
+            onMouseLeave={() => onHover(null)}
+            onClick={() => onSelect(zone.id)}
+            onKeyDown={handleKeyDown}
+            aria-label={labelText}
+            role="button"
+          />
+        ) : (
+          <path
+            d={meta.d}
+            className={pathClass}
+            tabIndex={0}
+            onMouseEnter={() => onHover(zone.id)}
+            onMouseLeave={() => onHover(null)}
+            onClick={() => onSelect(zone.id)}
+            onKeyDown={handleKeyDown}
+            aria-label={labelText}
+            role="button"
+          />
+        )}
+        <text
+          x={meta.textX}
+          y={meta.textY}
+          textAnchor="middle"
+          className={meta.textClass || 'text-[10px] fill-slate-400 font-medium'}
+        >
+          {meta.label}
+        </text>
+      </g>
+    );
+  },
+  (prev, next) => {
+    return (
+      prev.isBlocked === next.isBlocked &&
+      prev.isSelected === next.isSelected &&
+      prev.isHovered === next.isHovered &&
+      prev.zone.overlayColor === next.zone.overlayColor &&
+      prev.zone.lastUpdated === next.zone.lastUpdated
+    );
+  },
+);
 
-MapZoneItem.displayName = 'MapZoneItem';
+ZoneOverlay.displayName = 'ZoneOverlay';
 
 export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
   zones,
@@ -196,15 +208,21 @@ export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
   blockedRoutes = [],
 }) => {
   const [hoveredZoneId, setHoveredZoneId] = useState<string | null>(null);
+  const auth = useAuth();
+  const lang = auth.getCurrentUser()?.language || 'en';
+  const t = MAP_TRANSLATIONS[lang] || MAP_TRANSLATIONS.en;
 
   // Fast indexing lookup map (O(N) vs O(N^2))
   const zoneLookup = useMemo(() => {
     return new Map<string, Zone>(zones.map((z) => [z.id, z]));
   }, [zones]);
 
-  const handleSelect = useCallback((id: string) => {
-    onSelectZone(id);
-  }, [onSelectZone]);
+  const handleSelect = useCallback(
+    (id: string) => {
+      onSelectZone(id);
+    },
+    [onSelectZone],
+  );
 
   const handleHover = useCallback((id: string | null) => {
     setHoveredZoneId(id);
@@ -215,20 +233,20 @@ export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
           <Users className="w-4 h-4 text-sky-400" />
-          Interactive Stadium Digital Twin (Schematic Map)
+          {t.twinTitle}
         </h3>
         <div className="flex gap-4 text-xs">
           <span className="flex items-center gap-1.5 text-emerald-400">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-400 block"></span>
-            Normal
+            {t.normal}
           </span>
           <span className="flex items-center gap-1.5 text-amber-400">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500/25 border border-amber-400 block"></span>
-            Warning
+            {t.warning}
           </span>
           <span className="flex items-center gap-1.5 text-rose-500">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500/30 border border-rose-500 block animate-pulse"></span>
-            Critical / Blocked
+            {t.critical}
           </span>
         </div>
       </div>
@@ -251,7 +269,7 @@ export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
             if (!zone) return null;
 
             return (
-              <MapZoneItem
+              <ZoneOverlay
                 key={meta.id}
                 meta={meta}
                 zone={zone}
@@ -265,16 +283,36 @@ export const DigitalTwinMap: React.FC<DigitalTwinMapProps> = ({
           })}
 
           {/* Central Pitch Circle (Pure Visual) */}
-          <ellipse cx="400" cy="300" rx="35" ry="25" className="fill-slate-900/50 stroke-slate-800 stroke-[1]" />
-          <ellipse cx="400" cy="300" rx="15" ry="10" className="fill-none stroke-slate-800 stroke-[0.5]" />
+          <ellipse
+            cx="400"
+            cy="300"
+            rx="35"
+            ry="25"
+            className="fill-slate-900/50 stroke-slate-800 stroke-[1]"
+          />
+          <ellipse
+            cx="400"
+            cy="300"
+            rx="15"
+            ry="10"
+            className="fill-none stroke-slate-800 stroke-[0.5]"
+          />
         </svg>
       </div>
 
       {/* Accessibility overlay routes visual markers */}
       <div className="absolute top-18 left-8 flex flex-col gap-1 bg-slate-900/90 border border-slate-800 p-2 rounded text-[11px] text-slate-400">
-        <span className="font-semibold text-slate-300">Accessibility Routes</span>
-        <span className="flex items-center gap-1"><span className="w-4 h-1 border-t border-dashed border-sky-400 inline-block"></span>Wheelchair Route</span>
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 border border-sky-400 flex items-center justify-center text-[8px] rounded-full">E</span> Elevator Lift</span>
+        <span className="font-semibold text-slate-300">{t.accessibilityRoutes}</span>
+        <span className="flex items-center gap-1">
+          <span className="w-4 h-1 border-t border-dashed border-sky-400 inline-block"></span>
+          {t.wheelchairRoute}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 border border-sky-400 flex items-center justify-center text-[8px] rounded-full">
+            E
+          </span>{' '}
+          {t.elevatorLift}
+        </span>
       </div>
     </div>
   );

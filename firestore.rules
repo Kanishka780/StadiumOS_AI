@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Auth Helpers
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return request.auth.token.role;
+    }
+    
+    function isRole(role) {
+      return isAuthenticated() && getUserRole() == role;
+    }
+
+    // Default deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // zones collection
+    match /zones/{zoneId} {
+      allow read: if isAuthenticated();
+      allow write: if isRole('organizer') || isRole('security');
+    }
+
+    // events collection
+    match /events/{eventId} {
+      allow read: if isAuthenticated();
+      allow write: if isRole('organizer') || isRole('security');
+    }
+
+    // tasks collection
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow write: if isRole('organizer') || isRole('volunteer');
+    }
+
+    // incidents collection
+    match /incidents/{incidentId} {
+      allow read: if isAuthenticated();
+      allow write: if isRole('organizer') || isRole('security') || isRole('volunteer');
+    }
+
+    // sustainability collection
+    match /sustainability/{sustId} {
+      allow read: if isAuthenticated();
+      allow write: if isRole('organizer');
+    }
+
+    // auditLog collection
+    match /auditLog/{logId} {
+      allow read: if isRole('executive') || isRole('organizer');
+      allow write: if isRole('organizer') || isRole('security');
+    }
+  }
+}

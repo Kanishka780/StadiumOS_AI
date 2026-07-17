@@ -80,3 +80,26 @@ npm run dev
 ```bash
 npm run test
 ```
+
+---
+
+## 6. Traceability Matrix
+
+The table below maps all 13 core operational modules of the StadiumOS system directly to their file path and route implementations:
+
+| # | System Module | Implementation File / Component | Route / Endpoint |
+|---|---|---|---|
+| 1 | Interactive Digital Twin | [DigitalTwinMap.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/components/DigitalTwinMap.tsx) | `/twin` |
+| 2 | Centralized AI Reasoning Layer | [geminiService.ts](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/services/geminiService.ts) | `/api/events/ingest` |
+| 3 | Organizer Operations Cockpit | [OrganizerPanel.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/pages/OrganizerPanel.tsx) | `/organizer` |
+| 4 | Security Responders Dispatcher | [SecurityPanel.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/pages/SecurityPanel.tsx) | `/security` |
+| 5 | Volunteer Task Copilot (Offline-first) | [VolunteerCopilot.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/pages/VolunteerCopilot.tsx) | `/volunteer` |
+| 6 | Accessibility SOS Assistant | [AccessibilityAssistant.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/pages/AccessibilityAssistant.tsx) | `/accessibility` |
+| 7 | Fan Companion Chatbot (Multilingual) | [FanCompanion.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/pages/FanCompanion.tsx) | `/fan` |
+| 8 | Executive Stats Dashboard | [ExecutiveDashboard.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/pages/ExecutiveDashboard.tsx) | `/executive` |
+| 9 | Sustainability Analytics & Advice | [SustainabilityIntelligence.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/pages/SustainabilityIntelligence.tsx) | `/sustainability` |
+| 10 | Transportation Intelligence Hub | [TransportationIntelligence.tsx](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/pages/TransportationIntelligence.tsx) | `/transportation` |
+| 11 | Offline Write Queue Storage Engine | [localStorageService.ts](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/services/localStorageService.ts) | Client LocalStorage Sync |
+| 12 | Role-Based Auth Simulator | [authService.ts](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/services/authService.ts) | Local Persona Switcher |
+| 13 | Centralized Decision Audit Log | [firebaseService.ts](file:///c:/Users/kanis/OneDrive/Desktop/Projects/StadiumOS/src/services/firebaseService.ts) | `/trust` |
+

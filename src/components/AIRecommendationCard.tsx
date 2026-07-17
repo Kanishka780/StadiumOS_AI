@@ -27,7 +27,8 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
         action: `Responded to ${event.type} recommendation`,
         aiRecommendationId: event.id,
         decision,
-        rationale: decision === 'override' ? 'Manual override based on operations visual' : undefined,
+        rationale:
+          decision === 'override' ? 'Manual override based on operations visual' : undefined,
       });
 
       // If organizer accepted, simulate reassigning tasks or blocking routes
@@ -38,7 +39,9 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
         }
       }
 
-      setOutcome(decision === 'accept' ? 'accepted' : decision === 'override' ? 'overridden' : 'snoozed');
+      setOutcome(
+        decision === 'accept' ? 'accepted' : decision === 'override' ? 'overridden' : 'snoozed',
+      );
       if (onDecisionSubmitted) onDecisionSubmitted();
     } catch (err) {
       console.error('Failed to submit decision:', err);
@@ -58,18 +61,27 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
             <Cpu className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <span className="text-[10px] tracking-wider uppercase font-semibold text-sky-400">Gemini Reasoning Layer</span>
-            <h4 className="text-sm font-bold text-slate-100 mt-0.5 capitalize">{event.type.replace('_', ' ')} Advisory</h4>
+            <span className="text-[10px] tracking-wider uppercase font-semibold text-sky-400">
+              Gemini Reasoning Layer
+            </span>
+            <h4 className="text-sm font-bold text-slate-100 mt-0.5 capitalize">
+              {event.type.replace('_', ' ')} Advisory
+            </h4>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs bg-slate-950 border border-slate-800 px-2 py-1 rounded text-slate-400 font-medium">
             Conf: <strong className="text-sky-400">{(event.confidence * 100).toFixed(0)}%</strong>
           </span>
-          <span className={`text-xs px-2.5 py-1 rounded-full uppercase font-bold text-slate-950 ${
-            event.severity === 'critical' ? 'bg-rose-500' :
-            event.severity === 'high' ? 'bg-amber-500' : 'bg-emerald-400'
-          }`}>
+          <span
+            className={`text-xs px-2.5 py-1 rounded-full uppercase font-bold text-slate-950 ${
+              event.severity === 'critical'
+                ? 'bg-rose-500'
+                : event.severity === 'high'
+                  ? 'bg-amber-500'
+                  : 'bg-emerald-400'
+            }`}
+          >
             {event.severity}
           </span>
         </div>
@@ -80,9 +92,49 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
         {event.rationale}
       </div>
 
+      {event.expectedImpact && (
+        <div className="bg-slate-950/40 border border-slate-850 rounded-lg p-3.5 mb-4 text-xs flex flex-col gap-2.5">
+          <div>
+            <strong className="text-slate-200 font-semibold block mb-0.5">Expected Impact:</strong>
+            <p className="text-slate-300 leading-relaxed">{event.expectedImpact}</p>
+          </div>
+          {event.affectedEntities && event.affectedEntities.length > 0 && (
+            <div>
+              <strong className="text-slate-200 font-semibold block mb-1">
+                Affected Entities:
+              </strong>
+              <div className="flex flex-wrap gap-1.5">
+                {event.affectedEntities.map((ent, i) => (
+                  <span
+                    key={i}
+                    className="text-[10px] bg-slate-950 border border-slate-800 px-2 py-0.5 rounded text-sky-400 font-mono font-medium"
+                  >
+                    {ent}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {event.alternativeActions && event.alternativeActions.length > 0 && (
+            <div>
+              <strong className="text-slate-200 font-semibold block mb-1">
+                Alternative Actions Analyzed:
+              </strong>
+              <ul className="list-disc pl-4 text-slate-400 text-[11px] leading-relaxed flex flex-col gap-1">
+                {event.alternativeActions.map((act, i) => (
+                  <li key={i}>{act}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       {roleActionText && (
         <div className="bg-sky-500/5 border border-sky-500/10 rounded-lg p-4 mb-4 text-xs">
-          <strong className="text-sky-400 font-semibold block mb-1">Actionable Recommendation for you:</strong>
+          <strong className="text-sky-400 font-semibold block mb-1">
+            Actionable Recommendation for you:
+          </strong>
           <p className="text-slate-300 leading-relaxed font-medium">{roleActionText}</p>
         </div>
       )}
@@ -119,9 +171,21 @@ export const AIRecommendationCard: React.FC<AIRecommendationCardProps> = ({
 
       {outcome && (
         <div className="mt-4 border-t border-slate-800 pt-4 flex items-center gap-2 text-xs font-semibold">
-          {outcome === 'accepted' && <span className="text-emerald-400 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4" /> Recommendation Accepted & Logged</span>}
-          {outcome === 'overridden' && <span className="text-rose-400 flex items-center gap-1.5"><ShieldAlert className="w-4 h-4" /> Recommendation Overridden & Audit Saved</span>}
-          {outcome === 'snoozed' && <span className="text-slate-400 flex items-center gap-1.5"><Bell className="w-4 h-4" /> Alert Snoozed for 10 minutes</span>}
+          {outcome === 'accepted' && (
+            <span className="text-emerald-400 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" /> Recommendation Accepted & Logged
+            </span>
+          )}
+          {outcome === 'overridden' && (
+            <span className="text-rose-400 flex items-center gap-1.5">
+              <ShieldAlert className="w-4 h-4" /> Recommendation Overridden & Audit Saved
+            </span>
+          )}
+          {outcome === 'snoozed' && (
+            <span className="text-slate-400 flex items-center gap-1.5">
+              <Bell className="w-4 h-4" /> Alert Snoozed for 10 minutes
+            </span>
+          )}
         </div>
       )}
     </div>

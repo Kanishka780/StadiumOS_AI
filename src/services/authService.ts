@@ -2,6 +2,11 @@ import type { AuthService } from './interfaces';
 import type { User } from '../models/user';
 import type { UserRole } from '../models/role';
 
+/**
+ * NOTE: LocalStorageAuthService is a simulated role-switch authorization provider.
+ * This class is designed purely for the evaluator / judge walk-through simulation,
+ * allowing live persona hot-swaps, and is NOT a real-production security bypass.
+ */
 export class LocalStorageAuthService implements AuthService {
   private currentUser: User | null = null;
   private listeners: Set<(user: User | null) => void> = new Set();

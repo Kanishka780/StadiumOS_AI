@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDatabase, useStorage } from '../context/ServiceContext';
 import type { VolunteerTask } from '../models/task';
-import { AlertCircle, Wifi, WifiOff, CheckCircle2, ClipboardList, Camera, Mic, RefreshCw } from 'lucide-react';
+import {
+  AlertCircle,
+  Wifi,
+  WifiOff,
+  CheckCircle2,
+  ClipboardList,
+  Camera,
+  Mic,
+  RefreshCw,
+} from 'lucide-react';
 
 export const VolunteerCopilot: React.FC = () => {
   const db = useDatabase();
@@ -9,26 +18,40 @@ export const VolunteerCopilot: React.FC = () => {
 
   const [tasks, setTasks] = useState<VolunteerTask[]>([]);
   const [isOnline, setIsOnline] = useState(storage.isOnline());
-  const [queuedTasks, setQueuedTasks] = useState<any[]>([]);
+  const [queuedTasks, setQueuedTasks] = useState<Omit<VolunteerTask, 'timestamp'>[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>('Never');
 
   // Form states for incident reporting
   const [incidentText, setIncidentText] = useState('');
-  const [incidentPriority, setIncidentPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('low');
+  const [incidentPriority, setIncidentPriority] = useState<'low' | 'medium' | 'high' | 'critical'>(
+    'low',
+  );
   const [reportingStatus, setReportingStatus] = useState<'idle' | 'success' | 'queued'>('idle');
 
   const volId = 'uid_volunteer_user';
 
-  const loadTasksAndQueue = async () => {
+  const loadTasksAndQueue = useCallback(async () => {
     const queued = await storage.getQueuedTasks();
     setQueuedTasks(queued);
-  };
+  }, [storage]);
+
+  const handleAutoSync = useCallback(async () => {
+    setSyncing(true);
+    await storage.syncOfflineQueue(db);
+    setLastSyncTime(new Date().toLocaleTimeString());
+    setSyncing(false);
+    loadTasksAndQueue();
+  }, [db, storage, loadTasksAndQueue]);
 
   useEffect(() => {
-    const unsubTasks = db.listenToTasks(volId, (data) => {
-      setTasks(data);
-    }, () => {});
+    const unsubTasks = db.listenToTasks(
+      volId,
+      (data) => {
+        setTasks(data);
+      },
+      () => {},
+    );
 
     const unsubConnection = storage.listenToConnectionStatus((online) => {
       setIsOnline(online);
@@ -45,19 +68,11 @@ export const VolunteerCopilot: React.FC = () => {
       unsubConnection();
       clearInterval(interval);
     };
-  }, [db, storage]);
-
-  const handleAutoSync = async () => {
-    setSyncing(true);
-    await storage.syncOfflineQueue(db);
-    setLastSyncTime(new Date().toLocaleTimeString());
-    setSyncing(false);
-    loadTasksAndQueue();
-  };
+  }, [db, storage, loadTasksAndQueue, handleAutoSync]);
 
   const handleTaskStatusChange = async (taskId: string, currentStatus: VolunteerTask['status']) => {
     const nextStatus = currentStatus === 'pending' ? 'in_progress' : 'completed';
-    
+
     if (!isOnline) {
       // queue offline
       await storage.queueTaskUpdate(taskId, nextStatus);
@@ -96,11 +111,14 @@ export const VolunteerCopilot: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      
       {/* Network Status Banner */}
-      <div className={`p-4 rounded-xl flex items-center justify-between shadow ${
-        isOnline ? 'bg-slate-900 border border-slate-800' : 'bg-rose-500/20 border border-rose-500/30'
-      }`}>
+      <div
+        className={`p-4 rounded-xl flex items-center justify-between shadow ${
+          isOnline
+            ? 'bg-slate-900 border border-slate-800'
+            : 'bg-rose-500/20 border border-rose-500/30'
+        }`}
+      >
         <div className="flex items-center gap-3">
           {isOnline ? (
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
@@ -130,7 +148,6 @@ export const VolunteerCopilot: React.FC = () => {
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
         {/* Tasks Checklist */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col gap-4">
           <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2 border-b border-slate-800 pb-3">
@@ -145,11 +162,16 @@ export const VolunteerCopilot: React.FC = () => {
               </div>
             )}
             {tasks.map((task) => {
-              const isQueuedOffline = queuedTasks.some(q => q.id === task.id);
+              const isQueuedOffline = queuedTasks.some((q) => q.id === task.id);
               return (
-                <div key={task.id} className="flex items-start justify-between p-3.5 bg-slate-950/50 border border-slate-850 rounded-lg">
+                <div
+                  key={task.id}
+                  className="flex items-start justify-between p-3.5 bg-slate-950/50 border border-slate-850 rounded-lg"
+                >
                   <div className="flex flex-col gap-1 pr-2">
-                    <p className="text-xs text-slate-200 leading-relaxed font-medium">{task.instructions}</p>
+                    <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                      {task.instructions}
+                    </p>
                     <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold mt-1">
                       Status: {task.status.replace('_', ' ')} {isQueuedOffline && '(queued update)'}
                     </span>
@@ -177,7 +199,12 @@ export const VolunteerCopilot: React.FC = () => {
 
           <form onSubmit={handleSubmitIncident} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="description" className="text-[10px] uppercase font-bold text-slate-500">Incident Details</label>
+              <label
+                htmlFor="description"
+                className="text-[10px] uppercase font-bold text-slate-500"
+              >
+                Incident Details
+              </label>
               <textarea
                 id="description"
                 value={incidentText}
@@ -190,10 +217,14 @@ export const VolunteerCopilot: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] uppercase font-bold text-slate-500">Severity/Priority</span>
+                <span className="text-[10px] uppercase font-bold text-slate-500">
+                  Severity/Priority
+                </span>
                 <select
                   value={incidentPriority}
-                  onChange={(e: any) => setIncidentPriority(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setIncidentPriority(e.target.value as 'low' | 'medium' | 'high' | 'critical')
+                  }
                   className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-sky-500 cursor-pointer"
                   aria-label="Select priority level"
                 >
@@ -207,10 +238,18 @@ export const VolunteerCopilot: React.FC = () => {
               {/* Media tools */}
               <div className="flex flex-col justify-end gap-2 pb-0.5">
                 <div className="flex items-center gap-2">
-                  <button type="button" className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200 rounded-lg cursor-pointer" title="Simulate photo attachments">
+                  <button
+                    type="button"
+                    className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200 rounded-lg cursor-pointer"
+                    title="Simulate photo attachments"
+                  >
                     <Camera className="w-4 h-4" />
                   </button>
-                  <button type="button" className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200 rounded-lg cursor-pointer" title="Simulate voice report notes">
+                  <button
+                    type="button"
+                    className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-950 text-slate-400 hover:text-slate-200 rounded-lg cursor-pointer"
+                    title="Simulate voice report notes"
+                  >
                     <Mic className="w-4 h-4" />
                   </button>
                 </div>
@@ -238,9 +277,7 @@ export const VolunteerCopilot: React.FC = () => {
               <span>Offline. Report queued in local database. Will sync on reconnect.</span>
             </div>
           )}
-
         </div>
-
       </div>
     </div>
   );
